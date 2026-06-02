@@ -151,7 +151,7 @@
                 </div>
                 <p class="billed">$98 billed annually · 4 issues a year</p>
 
-                <a class="cta" href="https://forthem.com/cart/clear?return_to=%2Fcart%2Fadd%3Fitems%5B0%5D%5Bid%5D%3D44792925257894%26items%5B0%5D%5Bselling_plan%5D%3D1574994086%26items%5B0%5D%5Bquantity%5D%3D1%26items%5B1%5D%5Bid%5D%3D56214999859366%26items%5B1%5D%5Bquantity%5D%3D1%26items%5B2%5D%5Bid%5D%3D46400215023782%26items%5B2%5D%5Bquantity%5D%3D1%26return_to%3D%2Fcheckout%3Futm_source%3Dzinemedia%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription" data-cta="hero">
+                <a class="cta" href="https://forthem.com/cart/clear?return_to=%2Fcart%2Fadd%3Fitems%5B0%5D%5Bid%5D%3D44792925257894%26items%5B0%5D%5Bselling_plan%5D%3D1574994086%26items%5B0%5D%5Bquantity%5D%3D1%26items%5B1%5D%5Bid%5D%3D56214999859366%26items%5B1%5D%5Bquantity%5D%3D1%26items%5B2%5D%5Bid%5D%3D46400215023782%26items%5B2%5D%5Bquantity%5D%3D1%26return_to%3D%2Fcheckout%3Futm_source%3Dzine-subscription%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription" data-cta="hero">
                     Subscribe <span class="cta-arrow">→</span>
                 </a>
 
@@ -239,7 +239,7 @@
         <div class="sticky-price">$8.17/mo</div>
         <div class="sticky-sub">$98 / year</div>
     </div>
-    <a class="sticky-btn" href="https://forthem.com/cart/clear?return_to=%2Fcart%2Fadd%3Fitems%5B0%5D%5Bid%5D%3D44792925257894%26items%5B0%5D%5Bselling_plan%5D%3D1574994086%26items%5B0%5D%5Bquantity%5D%3D1%26items%5B1%5D%5Bid%5D%3D56214999859366%26items%5B1%5D%5Bquantity%5D%3D1%26items%5B2%5D%5Bid%5D%3D46400215023782%26items%5B2%5D%5Bquantity%5D%3D1%26return_to%3D%2Fcheckout%3Futm_source%3Dzinemedia%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription" data-cta="sticky">Subscribe →</a>
+    <a class="sticky-btn" href="https://forthem.com/cart/clear?return_to=%2Fcart%2Fadd%3Fitems%5B0%5D%5Bid%5D%3D44792925257894%26items%5B0%5D%5Bselling_plan%5D%3D1574994086%26items%5B0%5D%5Bquantity%5D%3D1%26items%5B1%5D%5Bid%5D%3D56214999859366%26items%5B1%5D%5Bquantity%5D%3D1%26items%5B2%5D%5Bid%5D%3D46400215023782%26items%5B2%5D%5Bquantity%5D%3D1%26return_to%3D%2Fcheckout%3Futm_source%3Dzine-subscription%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription" data-cta="sticky">Subscribe →</a>
 </div>
 
 <footer>
@@ -328,11 +328,18 @@
 
     // The CTA href contains the checkout query already URL-encoded once
     // (because it lives inside ?return_to=...). Match it in encoded form.
-    var oldEncoded = 'utm_source%3Dzinemedia%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription';
+    // Match either the new fallback (zine-subscription) or the legacy one (zinemedia)
+    // in case any cached page or related deploy still has the old stamp.
+    var oldEncodedNew = 'utm_source%3Dzine-subscription%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription';
+    var oldEncodedLegacy = 'utm_source%3Dzinemedia%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription';
+    var oldEncoded = oldEncodedNew;
     var newEncoded = newUtm.replace(/=/g, '%3D').replace(/&/g, '%26');
 
-    document.querySelectorAll('a[href*="' + oldEncoded + '"]').forEach(function (a) {
-        a.setAttribute('href', a.getAttribute('href').replace(oldEncoded, newEncoded));
+    document.querySelectorAll('a[href*="utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription"]').forEach(function (a) {
+        var h = a.getAttribute('href');
+        if (h.indexOf(oldEncodedNew)    !== -1) h = h.replace(oldEncodedNew,    newEncoded);
+        else if (h.indexOf(oldEncodedLegacy) !== -1) h = h.replace(oldEncodedLegacy, newEncoded);
+        a.setAttribute('href', h);
     });
 })();
 </script>
