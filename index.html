@@ -308,5 +308,34 @@
     }
 </script>
 
+<script>
+// --- Preserve incoming UTMs through to Shopify checkout ---------------------
+// Subscribe CTAs hard-code utm_source=zinemedia&utm_medium=landing_page&utm_campaign=magazine_subscription
+// inside their checkout return_to. That overwrites the UTM that brought the visitor here,
+// so Shopify's customerJourneySummary credits the landing page instead of (say) the
+// Autostraddle article. If the page was loaded with any utm_* params, swap them in.
+// Direct visitors with no UTMs keep the original fallback attribution.
+(function () {
+    var incoming = new URLSearchParams(window.location.search);
+    var keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','utm_id'];
+    var hasAny = keys.some(function (k) { return incoming.get(k); });
+    if (!hasAny) return;
+
+    var pairs = keys
+        .filter(function (k) { return incoming.get(k); })
+        .map(function (k) { return k + '=' + encodeURIComponent(incoming.get(k)); });
+    var newUtm = pairs.join('&');
+
+    // The CTA href contains the checkout query already URL-encoded once
+    // (because it lives inside ?return_to=...). Match it in encoded form.
+    var oldEncoded = 'utm_source%3Dzinemedia%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription';
+    var newEncoded = newUtm.replace(/=/g, '%3D').replace(/&/g, '%26');
+
+    document.querySelectorAll('a[href*="' + oldEncoded + '"]').forEach(function (a) {
+        a.setAttribute('href', a.getAttribute('href').replace(oldEncoded, newEncoded));
+    });
+})();
+</script>
+
 </body>
 </html>
