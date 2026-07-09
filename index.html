@@ -151,7 +151,7 @@
                 </div>
                 <p class="billed">$98 billed annually · 4 issues a year</p>
 
-                <a class="cta" href="https://forthem.com/cart/clear?return_to=%2Fcart%2Fadd%3Fitems%5B0%5D%5Bid%5D%3D44792925257894%26items%5B0%5D%5Bselling_plan%5D%3D1574994086%26items%5B0%5D%5Bquantity%5D%3D1%26items%5B1%5D%5Bid%5D%3D56214999859366%26items%5B1%5D%5Bquantity%5D%3D1%26items%5B2%5D%5Bid%5D%3D46400215023782%26items%5B2%5D%5Bquantity%5D%3D1%26return_to%3D%2Fcheckout%3Futm_source%3Dzine-subscription%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription" data-cta="hero">
+                <a class="cta" href="https://forthem.com/cart/clear?return_to=%2Fcart%2Fadd%3Fitems%5B0%5D%5Bid%5D%3D44792925257894%26items%5B0%5D%5Bselling_plan%5D%3D1574994086%26items%5B0%5D%5Bquantity%5D%3D1%26items%5B1%5D%5Bid%5D%3D56214999859366%26items%5B1%5D%5Bquantity%5D%3D1%26items%5B2%5D%5Bid%5D%3D46400215023782%26items%5B2%5D%5Bquantity%5D%3D1%26return_to%3D%252Fcheckout%253Futm_source%253Dzine-subscription%2526utm_medium%253Dlanding_page%2526utm_campaign%253Dmagazine_subscription" data-cta="hero">
                     Subscribe <span class="cta-arrow">→</span>
                 </a>
 
@@ -239,7 +239,7 @@
         <div class="sticky-price">$8.17/mo</div>
         <div class="sticky-sub">$98 / year</div>
     </div>
-    <a class="sticky-btn" href="https://forthem.com/cart/clear?return_to=%2Fcart%2Fadd%3Fitems%5B0%5D%5Bid%5D%3D44792925257894%26items%5B0%5D%5Bselling_plan%5D%3D1574994086%26items%5B0%5D%5Bquantity%5D%3D1%26items%5B1%5D%5Bid%5D%3D56214999859366%26items%5B1%5D%5Bquantity%5D%3D1%26items%5B2%5D%5Bid%5D%3D46400215023782%26items%5B2%5D%5Bquantity%5D%3D1%26return_to%3D%2Fcheckout%3Futm_source%3Dzine-subscription%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription" data-cta="sticky">Subscribe →</a>
+    <a class="sticky-btn" href="https://forthem.com/cart/clear?return_to=%2Fcart%2Fadd%3Fitems%5B0%5D%5Bid%5D%3D44792925257894%26items%5B0%5D%5Bselling_plan%5D%3D1574994086%26items%5B0%5D%5Bquantity%5D%3D1%26items%5B1%5D%5Bid%5D%3D56214999859366%26items%5B1%5D%5Bquantity%5D%3D1%26items%5B2%5D%5Bid%5D%3D46400215023782%26items%5B2%5D%5Bquantity%5D%3D1%26return_to%3D%252Fcheckout%253Futm_source%253Dzine-subscription%2526utm_medium%253Dlanding_page%2526utm_campaign%253Dmagazine_subscription" data-cta="sticky">Subscribe →</a>
 </div>
 
 <footer>
@@ -310,37 +310,52 @@
 
 <script>
 // --- Preserve incoming UTMs through to Shopify checkout ---------------------
-// Subscribe CTAs hard-code utm_source=zinemedia&utm_medium=landing_page&utm_campaign=magazine_subscription
-// inside their checkout return_to. That overwrites the UTM that brought the visitor here,
-// so Shopify's customerJourneySummary credits the landing page instead of (say) the
-// Autostraddle article. If the page was loaded with any utm_* params, swap them in.
-// Direct visitors with no UTMs keep the original fallback attribution.
+// The Subscribe CTAs carry a fallback checkout query
+//   utm_source=zine-subscription&utm_medium=landing_page&utm_campaign=magazine_subscription
+// nested inside return_to. Whatever UTM actually brought the visitor here (AS in-house
+// ad, AS menu link, the "Kill the Ads" subscribe popup, social, an editorial link) must
+// override that fallback — otherwise every source collapses into one bucket and the
+// links.forthem.com dashboard shows blank sign-ups per campaign.
+//
+// The checkout query lives two redirects deep (cart/clear -> cart/add -> checkout), so
+// it must be DOUBLE-encoded (%253F for ? , %253D for = , %2526 for &) to survive both
+// hops. Single-encoding silently drops utm_medium + utm_campaign — only utm_source makes
+// it through — which is exactly why campaign-level attribution was blank before this fix.
 (function () {
+    var MARKER = /(%252Fcheckout%253F).*$/; // everything after the double-encoded "/checkout?"
+
+    function stampCheckout(block) {
+        document.querySelectorAll('a[href*="%252Fcheckout%253F"]').forEach(function (a) {
+            var h = a.getAttribute('href').replace(MARKER, function (m, p1) { return p1 + block; });
+            a.setAttribute('href', h);
+        });
+    }
+
     var incoming = new URLSearchParams(window.location.search);
     var keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','utm_id'];
-    var hasAny = keys.some(function (k) { return incoming.get(k); });
-    if (!hasAny) return;
+    var present = keys.filter(function (k) { return incoming.get(k); });
 
-    var pairs = keys
-        .filter(function (k) { return incoming.get(k); })
-        .map(function (k) { return k + '=' + encodeURIComponent(incoming.get(k)); });
-    var newUtm = pairs.join('&');
+    if (present.length) {
+        // Double-encode each incoming pair so it survives both redirect hops intact.
+        var block = present.map(function (k) {
+            return encodeURIComponent(encodeURIComponent(k)) + '%253D' +
+                   encodeURIComponent(encodeURIComponent(incoming.get(k)));
+        }).join('%2526');
+        stampCheckout(block);
+        return;
+    }
 
-    // The CTA href contains the checkout query already URL-encoded once
-    // (because it lives inside ?return_to=...). Match it in encoded form.
-    // Match either the new fallback (zine-subscription) or the legacy one (zinemedia)
-    // in case any cached page or related deploy still has the old stamp.
-    var oldEncodedNew = 'utm_source%3Dzine-subscription%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription';
-    var oldEncodedLegacy = 'utm_source%3Dzinemedia%26utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription';
-    var oldEncoded = oldEncodedNew;
-    var newEncoded = newUtm.replace(/=/g, '%3D').replace(/&/g, '%26');
-
-    document.querySelectorAll('a[href*="utm_medium%3Dlanding_page%26utm_campaign%3Dmagazine_subscription"]').forEach(function (a) {
-        var h = a.getAttribute('href');
-        if (h.indexOf(oldEncodedNew)    !== -1) h = h.replace(oldEncodedNew,    newEncoded);
-        else if (h.indexOf(oldEncodedLegacy) !== -1) h = h.replace(oldEncodedLegacy, newEncoded);
-        a.setAttribute('href', h);
-    });
+    // No UTMs on the URL. A big slice of the Autostraddle audience runs ad blockers /
+    // privacy browsers (Firefox ETP-strict, Brave, DuckDuckGo) that strip utm_* on the
+    // hop from autostraddle.com — that's the bulk of the "~30% arrive with no UTMs".
+    // We can't recover which AS placement without the UTM, but if the referrer is still
+    // Autostraddle we can at least stamp the source instead of miscrediting it as direct.
+    var host = '';
+    try { host = new URL(document.referrer).hostname; } catch (e) {}
+    if (/(^|\.)autostraddle\.com$/i.test(host)) {
+        stampCheckout('utm_source%253Dautostraddle%2526utm_medium%253Dreferral%2526utm_campaign%253Duntagged_as');
+    }
+    // Genuine direct visitors keep the page's own zine-subscription fallback.
 })();
 </script>
 
